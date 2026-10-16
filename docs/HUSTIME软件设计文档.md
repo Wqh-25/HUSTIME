@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | 1.1（需求分析补全与验收口径澄清） |
+| 文档版本 | 1.2（同步SRS 1.1评阅修订及任务1目录） |
 | 需求基线 | HUSTIME-BL-20261016，本文第2章 |
 | 编制日期 | 2026-10-16 |
 | 文档性质 | 个人完成的软件设计文档；可作为实现、接口联调和测试依据 |
@@ -43,7 +43,7 @@ OPS角色不自动获得个人用户数据访问权。首版由维护者通过�
 | A-02 | QQ官方提供的是消息事件推送 | 断线尝试恢复会话，但不承诺补齐任意历史；UI-07显示接入间隙 |
 | A-03 | 首版使用官方QQ机器人接口，不依赖客户端Hook或私有协议 | 不要求用户提供个人QQ密码，不修改QQ客户端 |
 | A-04 | 云模型凭证由部署方配置，用户自行选择是否允许其订阅文本用于模型提取 | 未开启或无凭证时使用规则；私密正文不写入通用运行日志 |
-| A-05 | 单实例运行，20个个人账号、5个同时在线用户、每人最多5个已验证群、500条ACTIVE个人条目；每日进入系统的文本事件总量不超过20,000条 | 条目上限使提醒偏好能在有界单事务内重建；超规模重新评估数据库和队列 |
+| A-05 | 单实例运行，20个个人账号、5个同时在线用户、每人最多5个已验证群、500条ACTIVE个人条目；每日≤20,000个去重后按owner展开的文本处理单元，同群消息被2名用户订阅计2单元 | 条目上限使提醒偏好能在有界单事务内重建；重投入口次数另报，超规模重新评估数据库和队列；推导见SRS 7.3 |
 | A-06 | 服务器使用SSD、2 vCPU、4 GiB内存；时间统一按Asia/Shanghai解释和显示 | 第10章指标在此环境验证；数据库时刻使用UTC |
 | A-07 | 服务器持续运行且浏览器可访问 | 持久化站内提醒可补看；关闭浏览器时不保证设备弹窗 |
 | A-08 | QQ全量能力的账号开通、群设置和真实投递行为须联调 | 官方文档事实与项目策略分别标注；接入未通过TC-01时不得用模拟消息替代真实接入验收 |
@@ -56,18 +56,18 @@ OPS角色不自动获得个人用户数据访问权。首版由维护者通过�
 
 本设计采用本文独立需求基线，不声称引用或修改已提交的实验1文档。编制时可访问的工作区只有课程教案和空项目仓库，未发现可核对的实验1需求分析原文；这不等于断言课程平台上不存在其他提交。
 
-上述描述保留1.0编制时的历史状态。2026-10-16在设计1.0之后补写[需求分析SRS 1.0](HUSTIME需求分析文档.md)，共用HUSTIME-BL-20261016及原18项FR/9项NFR编号，补全来源、场景、优先级和验收，不反向声称需求分析曾先行提交。需求规范以该SRS细化描述为准，设计1.1保持一致；[AI协作记录](HUSTIME_AI协作记录.md)与[人工核实说明](HUSTIME人工核实说明.md)分别说明真实迭代和证据状态。
+上述描述保留1.0编制时的历史状态。2026-10-16在设计1.0之后补写SRS 1.0，现按评阅意见修订为[需求分析SRS 1.1](任务1/HUSTIME需求分析文档.md)，共用HUSTIME-BL-20261016及原18项FR/9项NFR编号，补全来源、场景、优先级和验收，不反向声称需求分析曾先行提交。需求规范以该SRS细化描述为准，设计1.2同步受影响的引用、优先级与验证口径；[AI协作记录](任务1/HUSTIME_AI协作记录.md)与[人工核实说明](任务1/HUSTIME人工核实说明.md)分别说明真实迭代和证据状态。
 
 需求来源包括：本次实验任务与评分要求、项目选题讨论中已明确的个人日程范围，以及2026-10-16用户明确提出的“QQ群通知、大模型API提取、无API时有限规则提取、不含小组调度”。本文编号为后续设计与测试的唯一基线编号。
 
 ### 2.2 功能需求
 
-P0表示首版必须通过验收，P1表示首版应完成但可在P0后实现。下表中“日程条目”统称个人任务TASK和固定活动EVENT。
+P0对应高，必须通过核心验收；P1对应中，在核心之后完成；P2对应低，可延后但须列明状态。混合优先级按SRS具体验收点划分，不能把低优先级体验项与授权/隔离/来源底线一起延后。下表中“日程条目”统称个人任务TASK和固定活动EVENT。
 
 | 编号 | 优先级 | 需求与验收边界 |
 | --- | --- | --- |
 | FR-01 | P0 | 用户登录后只能读写本人消息、候选、订阅和日程；未登录和跨用户访问被拒绝 |
-| FR-02 | P0 | 仅绑定已授权白名单QQ群；通过一次性群内验证关联本人身份，支持暂停与解除订阅 |
+| FR-02 | P0；别名编辑P2 | 仅绑定已授权白名单QQ群；通过一次性群内验证关联本人身份，支持暂停与解除订阅；个人显示别名可编辑但不改变群身份或授权 |
 | FR-03 | P0 | 接收QQ文本事件，保存原消息标识、群标识、原发送时间与接收时间；90天幂等窗口内重复投递不重复提取；超过90天的旧QQ消息不自动提取 |
 | FR-04 | P0 | 支持导入文本及可选原发送时间；缺少时间基准时，禁止把“明天”等相对日期自动解释为导入次日 |
 | FR-05 | P0 | MODEL_AUTO模式调用可配置的大模型API，一条通知生成0至10条结构化候选，保留原文证据和疑点 |
@@ -78,29 +78,29 @@ P0表示首版必须通过验收，P1表示首版应完成但可在P0后实现�
 | FR-10 | P0 | 候选确认具备幂等性；新增、修改、取消及提醒变更在事务中完成，并使用版本号防止覆盖并发修改 |
 | FR-11 | P0 | 支持手动新增、编辑、完成、取消和删除本人日程条目；TASK完成与CANCELLED取消语义不同 |
 | FR-12 | P0 | 对改期和取消通知生成候选；用户明确选择目标条目并确认后执行，保留原通知及修改通知的来源关系 |
-| FR-13 | P0 | 提供个人周日历和任务列表，展示截止日期、固定活动、状态、来源及重叠提示；不自动调度小组或个人任务 |
+| FR-13 | P1列表/冲突；P2周日历 | 列表展示截止日期、固定活动、状态及重叠提示；周日历为增强视图；基本条目详情与提醒不依赖周日历，不自动调度小组或个人任务 |
 | FR-14 | P0 | 按已确认时间和用户提醒偏好生成持久化站内通知；完成、改期、取消、删除后旧提醒不再触发 |
-| FR-15 | P1 | 支持按标题、群来源、状态及日期检索；查看来源、提取方式与条目修改历史，已清理原文显示清理标识 |
+| FR-15 | P2 | 增强的标题/群来源/状态/日期组合检索与历史浏览；FR-09/11/12/17仍以P0保证基本详情、证据、变更前后来源及清理标识 |
 | FR-16 | P0 | 用户可选择提取模式与每日调用次数预算；展示实际调用次数、token用量（供应商有返回时）和回退原因 |
 | FR-17 | P0 | 支持主动清理来源内容和删除个人条目；按保留期清理正文、证据及候选中复制的文本，说明备份删除时延 |
-| FR-18 | P1 | 维护者可查看QQ连接、队列、模型可用性、脱敏故障指标并暂停接入；不得通过运维界面查看他人正文或日程 |
+| FR-18 | P1维护；P2详细指标 | 维护者可处理授权群及连接故障、暂停接入，详细队列/模型/备份指标可延后；基本接入状态、权限隔离及无正文泄露仍按P0底线验收 |
 
 ### 2.3 非功能需求
 
 以下数值均为设计验收目标，不是已实测结论；测量环境与方法见第10、13章。
 
-与SRS优先级一致：NFR-01至05、08/09为高，NFR-06/07为中；FR表中的P0对应高、P1对应中。低优先级仅用于SRS的远期候选，不为凑档位降级当前风险控制。
+与SRS 1.1优先级一致：NFR-01至05、08/09为高，NFR-06和NFR-07基本可操作性为中，NFR-07两分钟速度优化为低；P0/P1/P2分别对应高/中/低。既有周视图、别名编辑、增强检索及详细指标也有P2范围；安全与错误防护不降级，依据见SRS第10章。
 
 | 编号 | 目标 |
 | --- | --- |
-| NFR-01 性能 | 基准负载下，常规列表/详情API服务端P95≤500 ms；确认写入P95≤1 s；规则提取排队至终态P95≤5 s；模型从任务开始执行至成功候选/规则回退完成/明确失败终态P95≤90 s；排队时间另报，不保证模型必然成功 |
+| NFR-01 性能 | 基准负载下，常规列表/详情API服务端P95≤500 ms；确认写入P95≤1 s；规则提取排队至终态P95≤5 s；模型从取得执行机会至成功候选/规则回退完成/明确失败终态P95≤90 s；初次槽位等待≤30秒，超限转规则；排队与总耗时另报，不保证模型必然成功 |
 | NFR-02 可靠性 | 已提交数据库的消息和提取任务在进程重启后可恢复；重复消息、重复确认和提醒任务重试均不产生重复业务结果 |
 | NFR-03 时间正确性 | 相对日期依赖原发送时间；日期精度不擅自提升；固定活动起止合法；不同接收时间不改变同一消息的解析日期 |
 | NFR-04 安全与隐私 | 所有个人资源执行服务端owner隔离；会话与CSRF校验有效；凭证仅在服务端；云模型输入最小化；群消息中的指令不获得系统权限 |
 | NFR-05 提取质量 | 第13章冻结测试集中，规则支持范围内任务检出精确率≥95%、召回率≥85%、明确日期归一化正确率≥95%；模型增强范围任务检出精确率≥90%、召回率≥85%；两种模式均不允许未经确认写日程 |
 | NFR-06 可维护与扩展 | 消息源、提取器和提醒器分别通过稳定内部接口接入；领域层不导入供应商SDK；数据库有版本迁移和契约测试 |
-| NFR-07 可用性 | 5名试用用户在给定“导入—核对—加入日历”场景中，至少4名无需指导在2分钟内完成；可通过键盘完成候选确认，错误提示定位到字段 |
-| NFR-08 成本与容量 | 默认每用户每日最多100次模型HTTP请求，允许设为0，最高200；实例并发模型请求≤2；每用户ACTIVE条目≤500；正文超过4,000 Unicode字符不静默截断；队列积压达到5,000条时暂停新文本导入并提示 |
+| NFR-07 可用性 | 桌面/移动视口可操作，键盘可完成核对，错误定位字段并保留输入；另做5人形成性定性试用，少于4人无指导在2分钟内完成触发流程/速度整改，不据4/5推断总体成功率 |
+| NFR-08 成本与容量 | 默认每用户每日最多100次模型HTTP请求，允许设为0，最高200；客户端活动模型请求≤2（含重试/探测）；每用户ACTIVE条目≤500；正文超过4,000 Unicode字符不静默截断；队列积压达到5,000条时暂停新文本导入并提示；模型初次等待超30秒回退，不等满队列才处理 |
 | NFR-09 恢复与保留 | 每日一致性备份，保留7份；数据库故障RPO≤24 h、RTO≤2 h；正文保留≤30天、待确认候选有效期14天、幂等元数据保留90天 |
 
 ### 2.4 需求取舍记录
@@ -115,6 +115,8 @@ P0表示首版必须通过验收，P1表示首版应完成但可在P0后实现�
 以上是形成本文首次基线时的范围取舍，不是对实验1原文的逐项修订。后续若提供实验1文档，应新增真实编号对照和变更表，不反向声称本文编号来自实验1。后续变更须记录变更ID、原/新需求、原因、受影响设计、测试及基线版本。
 
 1.1变更对应SRS的CR-SRS-01至04：补SRS和附件链接；澄清90秒终点、浏览器额外延迟、质量分母与跨年歧义优先级；记录用户NapCat实测为备选证据、历史仍不入首版；显式优先级映射。保留全部需求编号和原数值目标，不把NapCat测试当成官方QQ接入已通过。
+
+1.2同步SRS 1.1的CR-SRS-05至08：需求文档移至任务1目录，技术机制仍在本设计中；FR-13/15及可独立体验子项重新分档；明确20,000按用户扇出计量、5单元/秒峰值负载、模型初次等待30秒后规则回退和本地90秒执行终态；5人试用定性化。本轮不更换QQ路线，不新增历史采集，也不声称已有实际性能或人工验收结果。
 
 ## 3 架构设计
 
@@ -292,6 +294,7 @@ sequenceDiagram
 | 非文本、超过4,000字符 | 不自动提取；状态标记UNSUPPORTED或TOO_LONG，导入入口可提示分拆 | D04；API-06 |
 | 缺原发送时间 | 仍可提取绝对日期；相对日期置空并增加MISSING_TIME_BASE | D04/D06；INT-03 |
 | 预算耗尽/模型关闭 | 不发HTTP请求，直接规则，标明回退原因 | D11/D05；INT-02 |
+| 初次模型槽位等待超过30秒 | M04调度器将任务交规则执行槽，strategy_used=RULE、fallback_reason=MODEL_BUSY；不能占住全部规则worker等待云端 | D05与D04.received_at计算初次等待截止；INT-02、API-19 |
 | 模型失败后规则也无支持项 | 提取成功且items为空，显示“未提取到支持的通知”，原文仍可手动处理 | D05/D04；API-07 |
 | 数据库不可写 | 不推进持久化接收进度，不假装接收成功；登记故障，恢复连接时尝试Resume | D10；P-06 |
 | 进程在RUNNING崩溃 | 租约过期后重领；提交候选依靠job_id/ordinal幂等 | D05/D06；P-06 |
@@ -400,7 +403,7 @@ QQ断线记录开始时间、最后持久化seq及会话信息；恢复优先使
 | API-03 | POST /binding-challenges | 空对象→challenge、expires_at、群内操作说明，201 | 同用户最多1个有效挑战；5分钟一次；409/429 | FR-02 |
 | API-04 | GET /subscriptions | 订阅id、群别名、ACTIVE/PAUSED/LIMITED、最后接收时间 | 只读本人；不返回其他成员标识 | FR-02 |
 | API-05 | PATCH /subscriptions/{id}；DELETE同路径 | expected_version、state、alias→订阅；DELETE逻辑解除为UNBOUND并返回204 | 只接收ACTIVE/PAUSED变更；解除保留历史FK，不删除已确认日程；404/409 | FR-02、FR-17 |
-| API-06 | POST /messages/import | text、source_label、sent_at|null→message_id、job_id，202 | ≤4,000字符、需幂等键；413/429 | FR-04 |
+| API-06 | POST /messages/import | text、source_label、sent_at\|null→message_id、job_id，202 | ≤4,000字符、需幂等键；413/429 | FR-04 |
 | API-07 | GET /candidates；GET /candidates/{id} | 游标、状态→候选、证据、疑点、来源、提取方式、target_suggestions | PENDING列表默认；详情404 | FR-08、FR-09、FR-15 |
 | API-08 | PATCH /candidates/{id} | expected_version、action、proposal、relevance、target_item_id?→新候选版本；拒绝用decision=REJECT | relevance限定三个枚举；只允许PENDING；404/409/410/422 | FR-08、FR-09 |
 | API-09 | POST /candidates/{id}/confirm | candidate_version、target_item_id?、expected_item_version?、item?→确认回执，200 | 幂等键、目标必须本人；409/410/422 | FR-10、FR-12 |
@@ -543,6 +546,8 @@ expected_example是项目放在用户消息中的演示数据，不是供应商A
 
 单次请求连接超时5秒、总期限30秒；这些是客户端设置，不发送虚构的timeout请求字段。400/422不重试；401/402打开模型熔断并规则回退；429/500/503最多追加一次退避重试，预算不足不重试。熔断后5分钟最多一个探测请求，仍计入预算。每次实际HTTP尝试都占一个调用额度，usage缺失标记UNKNOWN，不能记为零费用；重复请求可能重复计费。
 
+本地活动请求信号量为2，首次、重试和探测共用。初次机会截止按源消息received_at＋30秒判断；M04在调度时检查已过期的MODEL_AUTO任务并转规则槽，不能领取后占住所有worker等待模型。已执行任务的重试仍受原执行总90秒限制，槽不可用或剩余时间不足即回退，不重置计时。退避合计≤5秒、规则处理目标5秒，校验/调度余量20秒；90秒仍无有效结果则FAILED，取消租约写入资格，迟到结果不得写回，提供手动录入/重新导入。取消本地HTTP等待不证明远端停止计算；实际用量未知仍如实记录。具体本地状态码、回退原因属于本项目契约，不伪称供应商提供这些参数。
+
 所有首次请求、重试和熔断探测共用派发入口：在同一短写事务内检查当前模式、订阅/白名单、当日预算，预留额度并登记model_attempts.state=DISPATCHED；事务提交是“已开始”的线性化边界，之后才实际发送HTTP。关闭模型的设置事务阻止之后的派发，但已派发请求可能仍发出或返回，不能撤回。崩溃使是否已发出不明时保守保留额度并标UNKNOWN。入队快照为RULE_ONLY的任务不因后来开启模型而自动改为付费路径。
 
 ### 6.6 EXT-RULE 有限规则提取契约
@@ -603,15 +608,15 @@ erDiagram
 | D01 | users：login_name、password_hash、role、disabled；sessions：user_id、token_hash、csrf_hash、expires_at | login_name UQ；role仅USER/OPS；会话仅存哈希；sessions.user_id FK users，过期索引 | FR-01、NFR-04 |
 | D02 | allowed_groups：bot_app_id、external_group_id、alias、authorization_note、enabled、version | (bot_app_id,external_group_id) UQ；授权说明不含聊天正文；禁用产生订阅暂停 | FR-02、FR-18 |
 | D03 | subscriptions：allowed_group_id、bound_member_openid、alias、state、version；binding_challenges：owner_id、challenge_hash、expires_at、consumed_at | (owner_id,allowed_group_id) UQ；state ACTIVE/PAUSED/LIMITED/UNBOUND；challenge_hash UQ且一次消费；有效挑战≤1由事务保证 | FR-02 |
-| D04 | source_messages：subscription_id|null、source_type、source_key、external_message_id|null、envelope_id|null、sent_at|null、received_at、text|null、sender_alias|null、mentions_json、purged_at、ingest_state、source_label | ingest_state为ACCEPTED/UNSUPPORTED/TOO_LONG/STALE；超长或非文本仅保存元数据、text=null且不建提取任务；(owner_id,source_type,source_key) UQ；owner/received_at与subscription/sent_at索引 | FR-03、FR-04、FR-15、FR-17 |
-| D05 | extraction_jobs：message_id、pipeline_version、mode_snapshot、state、strategy_used|null、fallback_reason|null、attempt_count、lease_token|null、lease_until|null、next_run_at、error_code|null | (message_id,pipeline_version) UQ；领取时生成新lease_token，提交/续租条件匹配；state按STATE-01；索引(state,next_run_at,lease_until)；首版不开放重抽取 | FR-05、FR-06、NFR-02 |
-| D06 | candidates：job_id、ordinal、action、proposal_json、target_hint|null、target_item_id|null、target_item_version|null、relevance、evidence_quote|null、uncertainties_json、state、expires_at、version | (job_id,ordinal) UQ，ordinal 0..9；owner/state/created_at索引；CONFIRMED/REJECTED/EXPIRED不可编辑；目标FK只允许本人条目 | FR-07至FR-10、FR-12 |
-| D07 | personal_items：kind、title、details、due_date|null、due_at|null、start_at|null、end_at|null、unknown_time_ack、status、version | kind TASK/EVENT；时间约束见DDL；UQ(id,owner_id)供复合FK；owner/status/due_at、owner/start_at和owner/due_date索引 | FR-07、FR-10至FR-13 |
-| D08 | item_sources：item_id、message_id、candidate_id、relation；item_changes：item_id、old_version、new_version、operation、before_json、after_json、source_candidate_id|null、actor_id | item_sources(candidate_id) UQ；relation CREATE/UPDATE/CANCEL；item_changes(item_id,new_version) UQ；快照为已确认个人条目，不保存完整群原文 | FR-12、FR-15 |
-| D09 | reminder_jobs：item_id、item_version、reminder_key、trigger_at、state、delayed；notifications：reminder_job_id、item_id|null、title_snapshot、created_at、read_at|null、delayed | (item_id,item_version,reminder_key) UQ；notifications.reminder_job_id UQ；(state,trigger_at)与(owner_id,read_at,created_at)索引 | FR-14、NFR-02 |
+| D04 | source_messages：subscription_id\|null、source_type、source_key、external_message_id\|null、envelope_id\|null、sent_at\|null、received_at、text\|null、sender_alias\|null、mentions_json、purged_at、ingest_state、source_label | ingest_state为ACCEPTED/UNSUPPORTED/TOO_LONG/STALE；超长或非文本仅保存元数据、text=null且不建提取任务；(owner_id,source_type,source_key) UQ；owner/received_at与subscription/sent_at索引 | FR-03、FR-04、FR-15、FR-17 |
+| D05 | extraction_jobs：message_id、pipeline_version、mode_snapshot、state、strategy_used\|null、fallback_reason\|null、attempt_count、lease_token\|null、lease_until\|null、next_run_at、error_code\|null | (message_id,pipeline_version) UQ；领取时生成新lease_token，提交/续租条件匹配；state按STATE-01；索引(state,next_run_at,lease_until)；首版不开放重抽取 | FR-05、FR-06、NFR-02 |
+| D06 | candidates：job_id、ordinal、action、proposal_json、target_hint\|null、target_item_id\|null、target_item_version\|null、relevance、evidence_quote\|null、uncertainties_json、state、expires_at、version | (job_id,ordinal) UQ，ordinal 0..9；owner/state/created_at索引；CONFIRMED/REJECTED/EXPIRED不可编辑；目标FK只允许本人条目 | FR-07至FR-10、FR-12 |
+| D07 | personal_items：kind、title、details、due_date\|null、due_at\|null、start_at\|null、end_at\|null、unknown_time_ack、status、version | kind TASK/EVENT；时间约束见DDL；UQ(id,owner_id)供复合FK；owner/status/due_at、owner/start_at和owner/due_date索引 | FR-07、FR-10至FR-13 |
+| D08 | item_sources：item_id、message_id、candidate_id、relation；item_changes：item_id、old_version、new_version、operation、before_json、after_json、source_candidate_id\|null、actor_id | item_sources(candidate_id) UQ；relation CREATE/UPDATE/CANCEL；item_changes(item_id,new_version) UQ；快照为已确认个人条目，不保存完整群原文 | FR-12、FR-15 |
+| D09 | reminder_jobs：item_id、item_version、reminder_key、trigger_at、state、delayed；notifications：reminder_job_id、item_id\|null、title_snapshot、created_at、read_at\|null、delayed | (item_id,item_version,reminder_key) UQ；notifications.reminder_job_id UQ；(state,trigger_at)与(owner_id,read_at,created_at)索引 | FR-14、NFR-02 |
 | D10 | connector_state：bot_app_id、session_secret、committed_seq、connection_state、gap_started_at、last_received_at；request_receipts：method、path、key、request_hash、response_json、expires_at；ops_audit：actor_id、action、resource_id、result_code、created_at | 连接会话受服务账号ACL保护；请求回执(owner_id,method,path,key) UQ；运维审计无正文/密钥；接入间隙只表示观测到的故障区间 | FR-10、FR-18、NFR-04 |
-| D11 | user_settings：mode、daily_model_request_limit、date_reminder_time、reminder_offsets_json、version；model_attempts：job_id、attempt_no、budget_day、state、reserved_at、sent_at|null、input_tokens|null、output_tokens|null、error_code|null | user_settings.owner_id PK；mode MODEL_AUTO/RULE_ONLY；尝试state DISPATCHED/SUCCEEDED/FAILED/UNKNOWN；(job_id,attempt_no) UQ；每日计数按Asia/Shanghai日期；token未知为null | FR-14、FR-16、NFR-08 |
-| D12 | confirmation_receipts：candidate_id、action、item_id|null、item_version、confirmed_at、response_json | candidate_id UQ；确认事务内创建；删除条目后保留最小回执，item_id置null，不反向重建条目 | FR-10、NFR-02 |
+| D11 | user_settings：mode、daily_model_request_limit、date_reminder_time、reminder_offsets_json、version；model_attempts：job_id、attempt_no、budget_day、state、reserved_at、sent_at\|null、input_tokens\|null、output_tokens\|null、error_code\|null | user_settings.owner_id PK；mode MODEL_AUTO/RULE_ONLY；尝试state DISPATCHED/SUCCEEDED/FAILED/UNKNOWN；(job_id,attempt_no) UQ；每日计数按Asia/Shanghai日期；token未知为null | FR-14、FR-16、NFR-08 |
+| D12 | confirmation_receipts：candidate_id、action、item_id\|null、item_version、confirmed_at、response_json | candidate_id UQ；确认事务内创建；删除条目后保留最小回执，item_id置null，不反向重建条目 | FR-10、NFR-02 |
 
 候选提案包含与第6.5节相同的kind/title/details/时间字段；用户编辑后再增加unknown_time_ack。提取strategy_used、疑点和证据存独立列，不将“模型自报置信度”当作正确概率。TASK没有执行时长，日历的DDL标记不参与活动冲突检测。
 
@@ -758,7 +763,7 @@ SQLite写锁冲突等待最多5秒，再最多进行两次短抖动重试；仍�
 | 页面 | 角色与内容 | 主要动作、状态和错误反馈 | 对应需求 |
 | --- | --- | --- | --- |
 | UI-01 登录与说明 | 访问者：产品范围、登录、模型处理说明 | 会话过期返回此页；错误不暴露账号存在；无自行创建管理员入口 | FR-01 |
-| UI-02 来源与群订阅 | USER：白名单验证说明、群别名、全量/LIMITED、最后接收时间、暂停状态、文本导入 | 生成验证挑战、复制群内指令、轮询绑定结果、暂停/解除、填写原发送时间 | FR-02至FR-04 |
+| UI-02 来源与群订阅 | USER：白名单验证说明、群别名、全量/LIMITED、最后接收时间、暂停状态、文本导入 | 生成验证挑战、复制群内指令、轮询绑定结果、暂停/解除、填写原发送时间；个人别名编辑P2，不改授权 | FR-02至FR-04 |
 | UI-03 待确认收件箱 | USER：候选卡片、原文高亮、提取模式、日期基准、疑点、目标匹配建议 | 分别确认/修正/拒绝多条候选；未知字段定位；版本冲突后保留草稿并展示新值 | FR-07至FR-10、FR-12 |
 | UI-04 个人周日历与任务列表 | USER：活动占用块、TASK截止标记、日期型与未知DDL区、已完成/取消过滤 | 新增、切换周、按群来源筛选、重叠提示；TASK截止点不显示成两小时执行块 | FR-11、FR-13、FR-15 |
 | UI-05 条目详情与提醒中心 | USER：时间精度、来源、版本历史、提醒时间、延迟/已读状态 | 修改、完成、取消、删除；删除前提示不可恢复和停止未来提醒 | FR-11至FR-15、FR-17 |
@@ -821,11 +826,13 @@ HUSTIME > 待确认                      [全部] [任务] [活动] [改期/取�
 | 需求 | 设计应对 | 测量口径与达标条件 |
 | --- | --- | --- |
 | NFR-01 | 队列异步提取、数据库覆盖索引、最大100条分页、短事务、worker独立于API | 20,000条消息、10,000候选、5,000条目背景；5并发10分钟，每用户约每10秒交互；正常合法请求不得非预期5xx/错误拒绝，成功响应计P95，失败单列；常规≤500 ms、确认≤1 s |
-| NFR-01 | 规则执行槽与模型并发槽分离 | 100条合规短文本、1条/秒进入空队列；规则从QUEUED到SUCCEEDED的P95≤5 s |
-| NFR-01 | 单模型请求30秒客户端总期限、最多重试1次、熔断与回退 | 从任务开始执行至模型成功/规则回退完成/明确失败终态计P95≤90 s；排队单报；网络故障模拟与真实质量验证分开，不宣称供应商SLA |
+| NFR-01 | 规则执行槽与模型并发槽分离 | 常态100条、1条/秒；峰值3,000条、5条/秒持续10分钟，同时有5在线用户各约10秒交互一次；规则QUEUED到终态P95≤5 s，成功/失败分开记录 |
+| NFR-01 | 模型初次等待槽位最多30秒，单请求30秒客户端总期限、最多重试1次、熔断与回退 | 初次等待超限即MODEL_BUSY转规则；取得执行机会到模型成功/规则回退完成/明确失败终态计P95≤90 s；排队及接收至终态总时长单报，不把30＋90预算当总P95保证；不宣称供应商SLA |
 | NFR-08 | 4,000字符输入上限、10候选上限、100/200次日额度、并发≤2、每用户500个ACTIVE条目 | 字符边界、并发预留、预算日切、队列5,000和条目500边界均测试；超限有明确反馈，无静默丢弃 |
 
 20,000条/日是低平均吞吐目标，不构成任意突发速率承诺。接入worker监测队列长度及最老任务等待时间；积压>1,000或最老等待>120秒显示告警。已从QQ接收的文本优先持久化；队列满时暂停导入并标记接入背压/间隙，不能既停收又声称零丢失。
+
+规划推导和假设详见[SRS 7.3](任务1/HUSTIME需求分析文档.md#73-容量峰值与性能目标的推导依据)：20,000为按owner展开后单元，12小时活跃期平均0.463单元/秒，十倍峰值4.63取5。模型分支5%、附加尝试10%、单次本地占位30秒时，1,100次尝试/日平均需0.764槽，峰值需7.64槽；2槽仅覆盖规划平均，必须按上表回退，不能以默认2,000次/日合计预算推断峰值能力。另测20账号共10,000 ACTIVE、30天600,000正文处理单元及4,000字符极值，并核算7份备份磁盘；该规划尚未压测。
 
 ### 10.2 可靠性与恢复
 
@@ -852,7 +859,7 @@ HUSTIME > 待确认                      [全部] [任务] [活动] [改期/取�
 
 NFR-06以接口替换而非预建微服务实现：新增模型只实现ModelExtractor，新增消息源只实现NormalizedMessage适配器。领域测试使用假提取器和固定时钟，不依赖外部付费服务。数据库迁移按版本编号提交，破坏性迁移前先备份；统一错误码、结构化日志和request_id便于定位。
 
-NFR-07要求候选核对页在1280×720桌面和390×844移动视口可用，字段标签清楚、键盘可达、未知时间与回退状态可见。5名真实试用用户执行同一任务，记录完成时间、失败步骤和反馈；目标至少4人无指导在2分钟内完成，失败时修订交互而非删掉测试记录。
+NFR-07要求候选核对页在1280×720桌面和390×844移动视口可用，字段标签清楚、键盘可达、未知时间与回退状态可见，字段错误保留输入，属于中优先级可操作性检查。另计划5名目标学生执行同一任务，逐人记录耗时、卡点和反馈；少于4人无指导在2分钟内完成触发交互/速度整改与复测。试用为形成性定性验证，速度优化为低优先级，4/5不是总体成功率，当前未执行。
 
 ### 10.5 提醒时间设计
 
@@ -957,10 +964,10 @@ M01至M08、ARCH-01/02、P-01至P-06、API/INT/EXT、D01至D12及UI-01至UI-07�
 | TC-31 事务故障注入 | 在确认/候选/提醒事务各写入点抛异常 | 全部回滚，无半完成状态；重启可重试；过期租约结果不可提交 |
 | TC-32 数据库不可写 | 磁盘满/权限错误/锁超时 | 503或保留队列；不推进接收seq；脱敏告警与恢复可见 |
 | TC-33 备份与恢复 | 20,000消息背景库做备份，再恢复空环境 | integrity_check/foreign_key_check通过；先清理再开放；RPO/RTO有演练记录 |
-| TC-34 容量与限流 | 5,000队列、超导入频率、5并发用户及模型并发压力 | 明确429/Retry-After；预算不超额、模型并发≤2、状态可见 |
+| TC-34 容量与限流 | 5,000队列、超导入频率、5并发用户；慢模型占满2槽并触发初次等待；20账号10,000 ACTIVE、30天保留量与极长文本容量 | 明确429/Retry-After；预算不超额、客户端模型活动请求≤2；等待超30秒MODEL_BUSY转规则；记录磁盘/备份容量与状态，不能静默缩短保留期 |
 | TC-35 提取质量集 | 固定脱敏/人工标注样例，分别运行规则与模型 | 按13.3计算精确率、召回率和日期正确率；不混合两模式掩盖不足 |
-| TC-36 用户与界面 | 5名用户完成导入到确认；桌面/移动视口、键盘操作、OPS页面 | ≥4人≤2分钟；字段定位/错误恢复有效；角色覆盖无越权 |
-| TC-37 性能基准 | 10.1指定背景数据与并发，记录API及任务耗时 | 给出P50/P95/失败数；按NFR-01判定，不用平均值代替P95 |
+| TC-36 用户与界面 | 5名目标学生完成导入到确认的定性试用；桌面/移动视口、键盘操作、OPS页面 | 逐人记录，少于4人无指导≤2分钟触发速度/交互整改，不推断总体比例；字段定位/草稿恢复有效；角色覆盖无越权 |
+| TC-37 性能基准 | 10.1背景数据、5在线混合交互与规则1/5单元每秒；模型慢响应/断流/坏输出及规则失败替身 | 按操作类型给样本数、P50/P95/最大/失败数；模型等待、执行及总时长分开；90秒终态及迟到不写回验证，不把失败当模型成功 |
 | TC-38 契约与迁移 | 假消息源/假提取器替换、迁移旧空库与有数据库 | 领域层无需供应商SDK；契约一致；迁移失败可从备份恢复 |
 
 ### 13.3 提取质量与验收方法
@@ -983,7 +990,7 @@ M01至M08、ARCH-01/02、P-01至P-06、API/INT/EXT、D01至D12及UI-01至UI-07�
 
 开发开始前必须完成：需求编号与接口冻结、QQ群实际全量能力验证、模型型号与凭证验证、规则支持范围确认。无法全量接入时，如仍提交“全量群通知版本”，必须明确记录未达成项；文本导入可支持其余功能验证但不替代FR-03的真实接入。
 
-首版完成条件：全部P0需求对应测试通过；P1完成情况逐项列出；不存在跨owner访问、未确认自动落历、错误取消、重复有效提醒等阻断缺陷；外部依赖失败能回退；备份恢复演练和5名用户试用完成。交付实现时保留测试证据与缺陷，不将本设计阶段的目标表写成“已通过”。
+首版完成条件：全部P0需求对应测试通过；P1/P2完成或延期按SRS第10.2节逐项列出；不存在跨owner访问、未确认自动落历、错误取消、重复有效提醒等阻断缺陷；外部依赖失败能回退；备份恢复演练和5名用户定性试用如实记录，阻断操作问题整改，速度优化不伪称总体统计结论。交付实现时保留测试证据与缺陷，不将本设计阶段的目标表写成“已通过”。
 
 ## 14 设计完备性检查与引用
 

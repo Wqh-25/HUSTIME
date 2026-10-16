@@ -6,12 +6,14 @@ HUSTIME = HUST + TIME，共用字母T。项目面向大学生，将已授权QQ�
 
 ## 课程文档
 
-- [HUSTIME需求分析文档](docs/HUSTIME需求分析文档.md)
-- [AI协作记录](docs/HUSTIME_AI协作记录.md)
-- [人工核实说明](docs/HUSTIME人工核实说明.md)
+- [HUSTIME需求分析文档](docs/任务1/HUSTIME需求分析文档.md)
+- [AI协作记录](docs/任务1/HUSTIME_AI协作记录.md)
+- [人工核实说明](docs/任务1/HUSTIME人工核实说明.md)
 - [HUSTIME个人日程助手软件设计文档](docs/HUSTIME软件设计文档.md)
 
 需求分析与设计共用FR-01至FR-18、NFR-01至NFR-09编号，保留设计先形成、SRS后补全的真实顺序。文档中的性能与质量数值为验收目标，当前仓库不声称HUSTIME已实现或通过测试。
+
+任务1三份材料按用户整理的位置统一放在`docs/任务1/`。SRS 1.1已按评阅建议补充角色界面、负载推导、三档优先级与完整来源ID；5人试用明确为定性验证，未虚构新增测试结果。
 
 ## 当前状态
 
